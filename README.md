@@ -80,6 +80,15 @@ yarn deploy-erc721:local
 yarn use-erc721:local
 ```
 
+#### c. Loop Paymaster
+```
+// Deploy your contracts
+yarn deploy-loop:local
+
+// Executes the `use-loop-paymaster.ts` script
+yarn use-loop:local
+```
+
 ## Stay Connected 🌐
 
 - [zkSync's Documentation](https://era.zksync.io/docs/)

@@ -47,7 +47,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   // Encoding the "General" paymaster flow's input
   const paymasterParams = utils.getPaymasterParams(PAYMASTER_ADDRESS, {
     type: "General",
-    innerInput: new TextEncoder().encode("abc")
+    innerInput: new TextEncoder().encode("")
   });
   
   // Estimate gas fee for mint transaction

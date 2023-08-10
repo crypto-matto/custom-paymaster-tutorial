@@ -12,9 +12,7 @@ import {TransactionHelper, Transaction} from "@matterlabs/zksync-contracts/l2/sy
 
 /// @author Matter Labs
 /// @notice This smart contract pays the gas fees on behalf of users that are the owner of a specific NFT asset
-contract ERC721GatedPaymaster is IPaymaster, Ownable {
-    IERC721 private immutable nft_asset;
-
+contract MyLoopPaymaster is IPaymaster, Ownable {
     modifier onlyBootloader() {
         require(
             msg.sender == BOOTLOADER_FORMAL_ADDRESS,
@@ -24,13 +22,11 @@ contract ERC721GatedPaymaster is IPaymaster, Ownable {
         _;
     }
 
-    // The constructor takes the address of the ERC721 contract as an argument.
-    // The ERC721 contract is the asset that the user must hold in order to use the paymaster.
-    constructor(address _erc721) {
-        nft_asset = IERC721(_erc721); // Initialize the ERC721 contract
+    constructor() {
+
     }
 
-    // The gas fees will be paid for by the paymaster if the user is the owner of the required NFT asset.
+    // The gas fees will be paid for by the paymaster if the user is the owner.
     function validateAndPayForPaymasterTransaction(
         bytes32,
         bytes32,
@@ -54,11 +50,6 @@ contract ERC721GatedPaymaster is IPaymaster, Ownable {
         if (paymasterInputSelector == IPaymasterFlow.general.selector) {
             address userAddress = address(uint160(_transaction.from));
 
-            require(
-                nft_asset.balanceOf(userAddress) > 0,
-                "User does not hold the required NFT asset and therefore must pay for their own gas!"
-            );
-
             // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
             // neither paymaster nor account are allowed to access this context variable.
             uint256 requiredETH = _transaction.gasLimit *
@@ -67,6 +58,7 @@ contract ERC721GatedPaymaster is IPaymaster, Ownable {
             (bool success, ) = payable(BOOTLOADER_FORMAL_ADDRESS).call{
                 value: requiredETH
             }("");
+
         } else {
             revert("Invalid paymaster flow");
         }

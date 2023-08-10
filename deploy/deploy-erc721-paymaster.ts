@@ -11,6 +11,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
+const FUNDING_AMOUNT = "0.01";
 
 if (!PRIVATE_KEY)
   throw "⛔️ Private key not detected! Add WALLET_PRIVATE_KEY to the .env file!";
@@ -81,7 +82,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   const paymasterDeploymentFilePath =
     __dirname + "/deploy-erc721-paymaster.ts";
   const res = fs.readFileSync(paymasterDeploymentFilePath, "utf8");
-  const final = res.replace(/0x8A1215E77D2ea1ce759a6bB0366870B21548F502/g, nftContract.address);
+  const final = res.replace(/0xd00aA47887597f95a68f87f1a5C96Df1B3fF0bdF/g, nftContract.address);
   fs.writeFileSync(paymasterDeploymentFilePath, final, "utf8");
 
   // Deploying the paymaster
@@ -103,7 +104,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   await (
     await deployer.zkWallet.sendTransaction({
       to: paymaster.address,
-      value: ethers.utils.parseEther("0.005"),
+      value: ethers.utils.parseEther(FUNDING_AMOUNT),
     })
   ).wait();
 

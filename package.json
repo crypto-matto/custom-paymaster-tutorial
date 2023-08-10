@@ -28,8 +28,10 @@
     "deploy": "hardhat deploy-zksync",
     "deploy-erc20:local": "NODE_ENV=test hardhat deploy-zksync --script deploy-erc20-paymaster.ts",
     "deploy-erc721:local": "NODE_ENV=test hardhat deploy-zksync --script deploy-erc721-paymaster.ts",
+    "deploy-loop:local": "NODE_ENV=test hardhat deploy-zksync --script deploy-loop-paymaster.ts",
     "use-erc20:local": "NODE_ENV=test hardhat deploy-zksync --script use-erc20-paymaster.ts",
     "use-erc721:local": "NODE_ENV=test hardhat deploy-zksync --script use-erc721-paymaster.ts",
+    "use-loop:local": "NODE_ENV=test hardhat deploy-zksync --script use-loop-paymaster.ts",
     "compile": "hardhat compile",
     "fix:fmt": "prettier --write \"{deploy,test}/**/*.{ts,js,jsx,tsx}\"",
     "lint:fmt": "prettier --check \"{deploy,test}/**/*.{ts,js,jsx,tsx}\""
