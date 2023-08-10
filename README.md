@@ -89,6 +89,15 @@ yarn deploy-loop:local
 yarn use-loop:local
 ```
 
+#### d. Swap Paymaster
+```
+// Deploy your contracts
+yarn deploy-swap:local
+
+// Executes the `use-swap-paymaster.ts` script
+yarn use-swap:local
+```
+
 ## Stay Connected 🌐
 
 - [zkSync's Documentation](https://era.zksync.io/docs/)
