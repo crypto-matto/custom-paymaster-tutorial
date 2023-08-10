@@ -44,10 +44,10 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   const paymaster = await deployer.deploy(paymasterArtifact, [erc20.address]);
   console.log(`Paymaster address: ${paymaster.address}`);
 
-  console.log(`Update .env file`);
+  console.log(`Updating .env file`);
   setEnvValue("EMPTY_WALLET_PRIVATE_KEY", emptyWallet.privateKey);
   setEnvValue("PAYMASTER_ADDRESS", paymaster.address);
-  setEnvValue("TOKEN_ADDRESS", erc20.address);
+  setEnvValue("ERC20_TOKEN_ADDRESS", erc20.address);
 
   console.log("Funding paymaster with ETH");
   // Supplying paymaster with ETH

@@ -47,26 +47,34 @@ To run tests, you'll need to start the zkSync local environment. Please refer to
 
 Without starting the zkSync local environment, the tests will fail with an error: `Error: could not detect network (event="noNetwork", code=NETWORK_ERROR, version=providers/5.7.2)`
 
-### Testing with Local zkSync
+## Testing with Local zkSync
 
 As long as you have your zkSync node serving on `http://localhost:3050`:
 
-#### Install your dependencies
+### 1. Install your dependencies
 - `yarn install`
 
-#### Compile all the contracts
+### 2. Compile all the contracts
 - `yarn compile`
 
-#### Prepare `.env` 
+### 3. Prepare `.env` 
 - Copy `.env.example` to `.env`
 - Put `WALLET_PRIVATE_KEY` which the wallet has some funds already
 
-#### ERC20 Paymaster
+### 4. Deploy & use Paymaster
+#### a. ERC20 Paymaster
 1. Deploy your contracts 
 `yarn deploy-erc20:local` 
 
-2. Executes the `use-paymaster.ts` script
+2. Executes the `use-erc20-paymaster.ts` script
 `yarn use-erc20:local` 
+
+#### b. ERC721 Paymaster
+1. Deploy your contracts 
+`yarn deploy-erc721:local` 
+
+2. Executes the `use-erc721-paymaster.ts` script
+`yarn use-erc721:local` 
 
 ## Stay Connected 🌐
 

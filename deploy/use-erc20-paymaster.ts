@@ -8,19 +8,19 @@ dotenv.config();
 const PAYMASTER_ADDRESS = process.env.PAYMASTER_ADDRESS || "";
 
 // Put the address of the ERC20 token here:
-const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "";
+const ERC20_TOKEN_ADDRESS = process.env.ERC20_TOKEN_ADDRESS || "";
 
 // Wallet private key
 const EMPTY_WALLET_PRIVATE_KEY = process.env.EMPTY_WALLET_PRIVATE_KEY || "";
 
 function getToken(hre: HardhatRuntimeEnvironment, wallet: Wallet) {
   const artifact = hre.artifacts.readArtifactSync("MyERC20");
-  return new ethers.Contract(TOKEN_ADDRESS!, artifact.abi, wallet);
+  return new ethers.Contract(ERC20_TOKEN_ADDRESS!, artifact.abi, wallet);
 }
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-  if (!EMPTY_WALLET_PRIVATE_KEY || !PAYMASTER_ADDRESS || !TOKEN_ADDRESS) {
-    throw new Error("Please ensure all EMPTY_WALLET_PRIVATE_KEY, PAYMASTER_ADDRESS & TOKEN_ADDRESS in .env has specified with correct value");
+  if (!EMPTY_WALLET_PRIVATE_KEY || !PAYMASTER_ADDRESS || !ERC20_TOKEN_ADDRESS) {
+    throw new Error("Please ensure all EMPTY_WALLET_PRIVATE_KEY, PAYMASTER_ADDRESS & ERC20_TOKEN_ADDRESS in .env has specified with correct value");
   }
 
   const provider = new Provider(hre.userConfig.networks?.zkSyncLocalTestnet?.url);
@@ -35,7 +35,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   console.log(
     `ERC20 token balance of the empty wallet before mint: ${await emptyWallet.getBalance(
-      TOKEN_ADDRESS,
+      ERC20_TOKEN_ADDRESS,
     )}`,
   );
 
@@ -49,7 +49,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   // Encoding the "ApprovalBased" paymaster flow's input
   const paymasterParams = utils.getPaymasterParams(PAYMASTER_ADDRESS, {
     type: "ApprovalBased",
-    token: TOKEN_ADDRESS,
+    token: ERC20_TOKEN_ADDRESS,
     // set minimalAllowance as we defined in the paymaster contract
     minimalAllowance: ethers.BigNumber.from(1),
     // empty bytes as testnet paymaster does not use innerInput
@@ -89,7 +89,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   console.log(
     `ERC20 token balance of the empty wallet after mint: ${await emptyWallet.getBalance(
-      TOKEN_ADDRESS,
+      ERC20_TOKEN_ADDRESS,
     )} MyToken`,
   );
 }
