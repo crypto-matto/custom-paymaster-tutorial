@@ -63,18 +63,12 @@ As long as you have your zkSync node serving on `http://localhost:3050`:
 
 ### 4. Deploy & use Paymaster
 #### a. ERC20 Paymaster
-1. Deploy your contracts 
-`yarn deploy-erc20:local` 
-
-2. Executes the `use-erc20-paymaster.ts` script
-`yarn use-erc20:local` 
+  1. Deploy your contracts: `yarn deploy-erc20:local` 
+  2. Executes the `use-erc20-paymaster.ts` script: `yarn use-erc20:local` 
 
 #### b. ERC721 Paymaster
-1. Deploy your contracts 
-`yarn deploy-erc721:local` 
-
-2. Executes the `use-erc721-paymaster.ts` script
-`yarn use-erc721:local` 
+  1. Deploy your contracts: `yarn deploy-erc721:local` 
+  2. Executes the `use-erc721-paymaster.ts` script: `yarn use-erc721:local` 
 
 ## Stay Connected 🌐
 
