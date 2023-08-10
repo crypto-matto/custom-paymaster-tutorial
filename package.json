@@ -26,6 +26,8 @@
   "scripts": {
     "test": "NODE_ENV=test hardhat test",
     "deploy": "hardhat deploy-zksync",
+    "deploy-erc20:local": "NODE_ENV=test hardhat deploy-zksync --script deploy-paymaster.ts",
+    "use-erc20:local": "NODE_ENV=test hardhat deploy-zksync --script use-paymaster.ts",
     "compile": "hardhat compile",
     "fix:fmt": "prettier --write \"{deploy,test}/**/*.{ts,js,jsx,tsx}\"",
     "lint:fmt": "prettier --check \"{deploy,test}/**/*.{ts,js,jsx,tsx}\""

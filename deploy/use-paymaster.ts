@@ -1,24 +1,30 @@
 import { Provider, utils, Wallet } from "zksync-web3";
 import * as ethers from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Put the address of the deployed paymaster here
-const PAYMASTER_ADDRESS = "<PAYMASTER_ADDRESS>";
+const PAYMASTER_ADDRESS = process.env.PAYMASTER_ADDRESS || "";
 
 // Put the address of the ERC20 token here:
-const TOKEN_ADDRESS = "<TOKEN_ADDRESS>";
+const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || "";
 
 // Wallet private key
-const EMPTY_WALLET_PRIVATE_KEY = "<EMPTY_WALLET_PRIVATE_KEY>";
+const EMPTY_WALLET_PRIVATE_KEY = process.env.EMPTY_WALLET_PRIVATE_KEY || "";
 
 function getToken(hre: HardhatRuntimeEnvironment, wallet: Wallet) {
   const artifact = hre.artifacts.readArtifactSync("MyERC20");
-  return new ethers.Contract(TOKEN_ADDRESS, artifact.abi, wallet);
+  return new ethers.Contract(TOKEN_ADDRESS!, artifact.abi, wallet);
 }
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-  const provider = new Provider("https://testnet.era.zksync.dev");
-  const emptyWallet = new Wallet(EMPTY_WALLET_PRIVATE_KEY, provider);
+  if (!EMPTY_WALLET_PRIVATE_KEY || !PAYMASTER_ADDRESS || !TOKEN_ADDRESS) {
+    throw new Error("Please ensure all EMPTY_WALLET_PRIVATE_KEY, PAYMASTER_ADDRESS & TOKEN_ADDRESS in .env has specified with correct value");
+  }
+
+  const provider = new Provider(hre.userConfig.networks?.zkSyncLocalTestnet?.url);
+  const emptyWallet = new Wallet(EMPTY_WALLET_PRIVATE_KEY!, provider);
 
   // const paymasterWallet = new Wallet(PAYMASTER_ADDRESS, provider);
   // Obviously this step is not required, but it is here purely to demonstrate that indeed the wallet has no ether.
@@ -34,7 +40,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   );
 
   let paymasterBalance = await provider.getBalance(PAYMASTER_ADDRESS);
-  console.log(`Paymaster ETH balance is ${paymasterBalance.toString()}`);
+  console.log(`Paymaster ETH balance is ${ethers.utils.formatEther(paymasterBalance).toString()} ETH`);
 
   const erc20 = getToken(hre, emptyWallet);
 
@@ -59,7 +65,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   });
 
   const fee = gasPrice.mul(gasLimit.toString());
-  console.log("Transaction fee estimation is :>> ", fee.toString());
+  console.log("Transaction fee estimation is :>> ", ethers.utils.formatEther(fee).toString(), "ETH");
 
   console.log(`Minting 5 tokens for empty wallet via paymaster...`);
   await (
@@ -75,15 +81,15 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   console.log(
     `Paymaster ERC20 token balance is now ${await erc20.balanceOf(
       PAYMASTER_ADDRESS,
-    )}`,
+    )} MyToken`,
   );
 
   paymasterBalance = await provider.getBalance(PAYMASTER_ADDRESS);
-  console.log(`Paymaster ETH balance is now ${paymasterBalance.toString()}`);
+  console.log(`Paymaster ETH balance is now ${ethers.utils.formatEther(paymasterBalance).toString()} ETH`);
 
   console.log(
     `ERC20 token balance of the empty wallet after mint: ${await emptyWallet.getBalance(
       TOKEN_ADDRESS,
-    )}`,
+    )} MyToken`,
   );
 }
