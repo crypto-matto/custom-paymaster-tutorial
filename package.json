@@ -39,5 +39,8 @@
     "compile": "hardhat compile",
     "fix:fmt": "prettier --write \"{deploy,test}/**/*.{ts,js,jsx,tsx}\"",
     "lint:fmt": "prettier --check \"{deploy,test}/**/*.{ts,js,jsx,tsx}\""
+  },
+  "dependencies": {
+    "patch-package": "^8.0.0"
   }
 }

@@ -1,0 +1,127 @@
+diff --git a/node_modules/@uniswap/lib/contracts/libraries/BitMath.sol b/node_modules/@uniswap/lib/contracts/libraries/BitMath.sol
+index d570c2d..6fc6d2f 100644
+--- a/node_modules/@uniswap/lib/contracts/libraries/BitMath.sol
++++ b/node_modules/@uniswap/lib/contracts/libraries/BitMath.sol
+@@ -45,27 +45,27 @@ library BitMath {
+         require(x > 0, 'BitMath::leastSignificantBit: zero');
+ 
+         r = 255;
+-        if (x & uint128(-1) > 0) {
++        if (x & type(uint128).max > 0) {
+             r -= 128;
+         } else {
+             x >>= 128;
+         }
+-        if (x & uint64(-1) > 0) {
++        if (x & type(uint64).max > 0) {
+             r -= 64;
+         } else {
+             x >>= 64;
+         }
+-        if (x & uint32(-1) > 0) {
++        if (x & type(uint32).max > 0) {
+             r -= 32;
+         } else {
+             x >>= 32;
+         }
+-        if (x & uint16(-1) > 0) {
++        if (x & type(uint16).max > 0) {
+             r -= 16;
+         } else {
+             x >>= 16;
+         }
+-        if (x & uint8(-1) > 0) {
++        if (x & type(uint8).max > 0) {
+             r -= 8;
+         } else {
+             x >>= 8;
+diff --git a/node_modules/@uniswap/lib/contracts/libraries/FixedPoint.sol b/node_modules/@uniswap/lib/contracts/libraries/FixedPoint.sol
+index 27d0ed6..26b62b8 100644
+--- a/node_modules/@uniswap/lib/contracts/libraries/FixedPoint.sol
++++ b/node_modules/@uniswap/lib/contracts/libraries/FixedPoint.sol
+@@ -78,13 +78,13 @@ library FixedPoint {
+         uint224 uppero_lowers = uint224(upper_other) * lower_self; // * 2^-112
+ 
+         // so the bit shift does not overflow
+-        require(upper <= uint112(-1), 'FixedPoint::muluq: upper overflow');
++        require(upper <= type(uint112).max, 'FixedPoint::muluq: upper overflow');
+ 
+         // this cannot exceed 256 bits, all values are 224 bits
+         uint256 sum = uint256(upper << RESOLUTION) + uppers_lowero + uppero_lowers + (lower >> RESOLUTION);
+ 
+         // so the cast does not overflow
+-        require(sum <= uint224(-1), 'FixedPoint::muluq: sum overflow');
++        require(sum <= type(uint224).max, 'FixedPoint::muluq: sum overflow');
+ 
+         return uq112x112(uint224(sum));
+     }
+@@ -95,14 +95,14 @@ library FixedPoint {
+         if (self._x == other._x) {
+             return uq112x112(uint224(Q112));
+         }
+-        if (self._x <= uint144(-1)) {
++        if (self._x <= type(uint144).max) {
+             uint256 value = (uint256(self._x) << RESOLUTION) / other._x;
+-            require(value <= uint224(-1), 'FixedPoint::divuq: overflow');
++            require(value <= type(uint224).max, 'FixedPoint::divuq: overflow');
+             return uq112x112(uint224(value));
+         }
+ 
+         uint256 result = FullMath.mulDiv(Q112, self._x, other._x);
+-        require(result <= uint224(-1), 'FixedPoint::divuq: overflow');
++        require(result <= type(uint224).max, 'FixedPoint::divuq: overflow');
+         return uq112x112(uint224(result));
+     }
+ 
+@@ -112,13 +112,13 @@ library FixedPoint {
+         require(denominator > 0, 'FixedPoint::fraction: division by zero');
+         if (numerator == 0) return FixedPoint.uq112x112(0);
+ 
+-        if (numerator <= uint144(-1)) {
++        if (numerator <= type(uint144).max) {
+             uint256 result = (numerator << RESOLUTION) / denominator;
+-            require(result <= uint224(-1), 'FixedPoint::fraction: overflow');
++            require(result <= type(uint224).max, 'FixedPoint::fraction: overflow');
+             return uq112x112(uint224(result));
+         } else {
+             uint256 result = FullMath.mulDiv(numerator, Q112, denominator);
+-            require(result <= uint224(-1), 'FixedPoint::fraction: overflow');
++            require(result <= type(uint224).max, 'FixedPoint::fraction: overflow');
+             return uq112x112(uint224(result));
+         }
+     }
+@@ -135,7 +135,7 @@ library FixedPoint {
+     // square root of a UQ112x112
+     // lossy between 0/1 and 40 bits
+     function sqrt(uq112x112 memory self) internal pure returns (uq112x112 memory) {
+-        if (self._x <= uint144(-1)) {
++        if (self._x <= type(uint144).max) {
+             return uq112x112(uint224(Babylonian.sqrt(uint256(self._x) << 112)));
+         }
+ 
+diff --git a/node_modules/@uniswap/lib/contracts/libraries/FullMath.sol b/node_modules/@uniswap/lib/contracts/libraries/FullMath.sol
+index f06356c..c272ad5 100644
+--- a/node_modules/@uniswap/lib/contracts/libraries/FullMath.sol
++++ b/node_modules/@uniswap/lib/contracts/libraries/FullMath.sol
+@@ -5,7 +5,7 @@ pragma solidity >=0.4.0;
+ // license is CC-BY-4.0
+ library FullMath {
+     function fullMul(uint256 x, uint256 y) internal pure returns (uint256 l, uint256 h) {
+-        uint256 mm = mulmod(x, y, uint256(-1));
++        uint256 mm = mulmod(x, y, 115792089237316195423570985008687907853269984665640564039457584007913129639935);
+         l = x * y;
+         h = mm - l;
+         if (mm < l) h -= 1;
+@@ -16,10 +16,10 @@ library FullMath {
+         uint256 h,
+         uint256 d
+     ) private pure returns (uint256) {
+-        uint256 pow2 = d & -d;
++        uint256 pow2 = d & (~d + 1);
+         d /= pow2;
+         l /= pow2;
+-        l += h * ((-pow2) / pow2 + 1);
++        l += h * ((~pow2 + 1) / pow2 + 1);
+         uint256 r = 1;
+         r *= 2 - d * r;
+         r *= 2 - d * r;
