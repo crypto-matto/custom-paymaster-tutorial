@@ -6,6 +6,7 @@ dotenv.config();
 
 // Put the address of the deployed paymaster here
 const PAYMASTER_ADDRESS = process.env.PAYMASTER_ADDRESS || "";
+const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
 
 // Put the address of the ERC20 token here:
 const GLD_TOKEN_ADDRESS = process.env.GLD_TOKEN_ADDRESS || "";
@@ -37,100 +38,62 @@ function getUniswapV2Router02(hre: HardhatRuntimeEnvironment, wallet: Wallet) {
 
 export default async function (hre: HardhatRuntimeEnvironment) {
   const provider = new Provider(hre.config.networks?.zkSyncLocalTestnet?.url);
+  const richWallet = new Wallet(WALLET_PRIVATE_KEY, provider);
   const emptyWallet = new Wallet(EMPTY_WALLET_PRIVATE_KEY, provider);
+  console.log("----------------------- before swap -----------------------")
+  console.log(`[empty wallet] address: ${emptyWallet.address}`);
+  const emptyWalletEthBalanceBefore = await provider.getBalance(emptyWallet.address);
+  const emptyWalletGld2BalanceBefore = await emptyWallet.getBalance(GLD2_TOKEN_ADDRESS);
 
-  // Obviously this step is not required, but it is here purely to demonstrate that indeed the wallet has no ether.
-  const ethBalance = await emptyWallet.getBalance();
+  printBalance("empty wallet", "ETH", emptyWalletEthBalanceBefore);
+  printBalance("empty wallet", "GLD2", emptyWalletGld2BalanceBefore);
 
-  console.log(`Empty wallet's address: ${emptyWallet.address}`);
-  console.log(
-    `ETH balance of the empty wallet before mint: ${await emptyWallet.getBalance()}`
-  );
+  let GLDToken = getGLDToken(hre, richWallet);
+  let router = getUniswapV2Router02(hre, emptyWallet);
 
-  if (!ethBalance.eq(0)) {
-    throw new Error("The wallet is not empty!");
+  // fund some gld token for swap
+  let emptyWalletGldBalanceBefore = await GLDToken.balanceOf(emptyWallet.address);
+  if (emptyWalletGldBalanceBefore.lte(ethers.utils.parseEther("100000"))) {
+    await (
+      await GLDToken.transfer(emptyWallet.address, ethers.utils.parseEther("1000000"))
+    ).wait()
+    emptyWalletGldBalanceBefore = await GLDToken.balanceOf(emptyWallet.address);
   }
+  printBalance("empty wallet", "GLD", emptyWalletGldBalanceBefore);
 
-  console.log(
-    `GLD token balance of the empty wallet before mint: ${await emptyWallet.getBalance(GLD_TOKEN_ADDRESS)}`
-  );
-
-  console.log(
-    `GLD2 token balance of the empty wallet before mint: ${await emptyWallet.getBalance(GLD2_TOKEN_ADDRESS)}`
-  );
-
-  console.log(
-    `WETH9 token balance of the empty wallet before mint: ${await emptyWallet.getBalance(WETH_TOKEN_ADDRESS)}`
-  );
-
-  let paymasterBalance = await provider.getBalance(PAYMASTER_ADDRESS);
-  console.log(`Paymaster ETH balance is ${ethers.utils.formatEther(paymasterBalance.toString())} ETH`);
-
-  const GLDToken = getGLDToken(hre, emptyWallet);
-  const GLD2Token = getGLD2Token(hre, emptyWallet);
-  const WETH9Token = getWETH9Token(hre, emptyWallet);
-  const uniswapContract = getUniswapV2Router02(hre, emptyWallet);
-
-  const gasPrice = await provider.getGasPrice();
+  let paymasterBalanceBefore = await provider.getBalance(PAYMASTER_ADDRESS);
+  if (paymasterBalanceBefore.lte(ethers.utils.parseEther("10"))) {
+    await (
+      await richWallet.transfer({
+        to: PAYMASTER_ADDRESS,
+        amount: ethers.utils.parseEther("10"),
+      })
+    ).wait();
+  }
+  printBalance("paymaster", "ETH", paymasterBalanceBefore);
 
   // Encoding the "General" paymaster flow's input
   const paymasterParams = utils.getPaymasterParams(PAYMASTER_ADDRESS, {
     type: "General",
     innerInput: new Uint8Array(),
   });
-  
-  // Estimate gas fee for swapETHForExactTokens transaction
-  // const gasLimit = await uniswapContract.estimateGas.swapETHForExactTokens(
-  //   10000, 
-  //   [WETH_TOKEN_ADDRESS, GLD_TOKEN_ADDRESS],
-  //   emptyWallet.address,
-  //   Math.round(Date.now() / 1000) + 10 * 60,
-  //   {
-  //     customData: {
-  //       gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT * 4,
-  //       paymasterParams: paymasterParams,
-  //     },
-  //   }
-  // );
 
-  // Estimate gas fee for swapExactTokensForETH transaction
-  const gasLimit = await uniswapContract.estimateGas.swapExactTokensForETH(
-    ethers.BigNumber.from('10000000000000000000000'),
-    ethers.BigNumber.from('996999'),
-    // 100000, 
-    [GLD_TOKEN_ADDRESS, WETH_TOKEN_ADDRESS],
-    emptyWallet.address,
-    Math.round(Date.now() / 1000) + 10 * 60,
-    {
+  GLDToken = GLDToken.connect(emptyWallet);
+  await(
+    await GLDToken.approve(UNISWAP_V2_ROUTER02_ADDRESS, ethers.constants.MaxUint256, {
       customData: {
-        gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
-        paymasterParams: paymasterParams,
-      },
-    }
-  );
+        gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT * 4,
+        paymasterParams: paymasterParams, 
+      }
+    })
+  ).wait();
 
-  const fee = gasPrice.mul(gasLimit.toString());
-  console.log("Transaction fee estimation is :>> ", ethers.utils.formatEther(fee.toString()), "ETH");
-
-  console.log(`Swaping 5 GLD Tokens for empty wallet via paymaster...`);
+  console.log(`Swaping 1 GLD for GLD2 via paymaster...`);
   await (
-    // await uniswapContract.swapETHForExactTokens(
-    //   5, 
-    //   [WETH_TOKEN_ADDRESS, GLD_TOKEN_ADDRESS],
-    //   emptyWallet.address,
-    //   Math.round(Date.now() / 1000) + 10 * 60,
-    //   {
-    //     customData: {
-    //       gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
-    //       paymasterParams: paymasterParams,
-    //     },
-    //   }
-    // )
-
-    await uniswapContract.estimateGas.swapExactTokensForETH(
-      100000,
+    await router.swapExactTokensForTokens(
+      ethers.utils.parseEther("1"),
       0, 
-      [GLD_TOKEN_ADDRESS, WETH_TOKEN_ADDRESS],
+      [GLD_TOKEN_ADDRESS, GLD2_TOKEN_ADDRESS],
       emptyWallet.address,
       Math.round(Date.now() / 1000) + 10 * 60,
       {
@@ -140,33 +103,44 @@ export default async function (hre: HardhatRuntimeEnvironment) {
         },
       }
     )
-  // ).wait();
-  );
+  ).wait();
 
+  console.log("----------------------- after swap -----------------------");
+
+  let paymasterBalance = await provider.getBalance(PAYMASTER_ADDRESS);
+  printBalanceChanges("paymaster", "ETH", paymasterBalanceBefore, paymasterBalance);
+
+  const emptyWalletEthBalance = await provider.getBalance(emptyWallet.address);
+  const emptyWalletGldBalance = await emptyWallet.getBalance(GLD_TOKEN_ADDRESS);
+  const emptyWalletGld2Balance = await emptyWallet.getBalance(GLD2_TOKEN_ADDRESS);
+
+  printBalanceChanges("empty wallet", "ETH", emptyWalletEthBalanceBefore, emptyWalletEthBalance);
+  printBalanceChanges("empty wallet", "GLD", emptyWalletGldBalanceBefore, emptyWalletGldBalance);
+  printBalanceChanges("empty wallet", "GLD2", emptyWalletGld2BalanceBefore, emptyWalletGld2Balance);
+}
+
+function printBalance(walletName: string, tokenName: string, balance: ethers.BigNumber) {
   console.log(
-    `Paymaster GLD token balance is now ${
-      await GLDToken.balanceOf(PAYMASTER_ADDRESS)
-    }`
+    `[${walletName}] ${tokenName} balance: ${ethers.utils.formatEther(balance)}`
   );
+}
 
-  paymasterBalance = await provider.getBalance(PAYMASTER_ADDRESS);
-  console.log(`Paymaster ETH balance is now ${ethers.utils.formatEther(
-    paymasterBalance.toString()
-  )} ETH`);
+function printBalanceChanges(walletName: string, tokenName: string, balanceBefore: ethers.BigNumber, balanceAfter: ethers.BigNumber) {
+  if (balanceBefore.eq(balanceAfter)) {
+    console.log(
+      `[${walletName}] ${tokenName} balance: ${ethers.utils.formatEther(balanceAfter)}, balance didn't change`
+    );
+  }
 
-  console.log(
-    `ETH balance of the empty wallet after mint: ${await emptyWallet.getBalance()}`
-  );
+  if (balanceBefore.gt(balanceAfter)) {
+    console.log(
+      `[${walletName}] ${tokenName} balance: ${balanceAfter}, decreased by ${ethers.utils.formatEther(balanceBefore.sub(balanceAfter))}`
+    );
+  }
 
-  console.log(
-    `GLD token balance of the empty wallet after mint: ${await emptyWallet.getBalance(GLD_TOKEN_ADDRESS)}`
-  );
-
-  console.log(
-    `GLD2 token balance of the empty wallet after mint: ${await emptyWallet.getBalance(GLD2_TOKEN_ADDRESS)}`
-  );
-
-  console.log(
-    `WETH token balance of the empty wallet after mint: ${await emptyWallet.getBalance(WETH_TOKEN_ADDRESS)}`
-  );
+  if (balanceBefore.lt(balanceAfter)) {
+    console.log(
+      `[${walletName}] ${tokenName} balance: ${balanceAfter}, increased by ${ethers.utils.formatEther(balanceAfter.sub(balanceBefore))}`
+    );
+  }
 }
