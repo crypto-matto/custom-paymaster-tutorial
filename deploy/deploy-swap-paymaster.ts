@@ -28,6 +28,11 @@ async function deployUniSwapTokenContracts(hre: HardhatRuntimeEnvironment) {
   console.log(`GLD2 address: ${GLD2Contract.address}`);
   console.log(`WETH address: ${WETHContract.address}`);
 
+  const balanceGLD0 = await GLDContract.balanceOf(wallet.address);
+  console.log(`GLD balance: ${ethers.utils.formatEther(balanceGLD0)}`);
+  const balanceGLD20 = await GLD2Contract.balanceOf(wallet.address);
+  console.log(`GLD2 balance: ${ethers.utils.formatEther(balanceGLD20)}`);
+
   const artifactFactory = await deployer.loadArtifact("UniswapV2Factory");
   
   // Deploy this contract. The returned object will be of a `Contract` type, similarly to ones in `ethers`.
@@ -48,20 +53,9 @@ async function deployUniSwapTokenContracts(hre: HardhatRuntimeEnvironment) {
 
   console.log("Uniswap Contracts deployment done. ")
 
-  console.log(`Creating pair...... ${GLD2Contract.address} - ${GLDContract.address}`);
-  let gas = await factory.estimateGas.createPair(GLD2Contract.address, GLDContract.address);
-  let tx = await factory.createPair(GLDContract.address, GLD2Contract.address,
-    {
-      gasLimit: gas.add(1000000),
-      gasPrice: ethers.BigNumber.from('0x10000000'),
-      type: 0,
-    })
-
-  await tx.wait()
-
   console.log(`Approving GLD2 token to router......`);
-  gas = await GLD2Contract.estimateGas.approve(router.address, ethers.constants.MaxUint256);
-  tx = await GLD2Contract.approve(router.address, ethers.constants.MaxUint256, {
+  let gas = await GLD2Contract.estimateGas.approve(router.address, ethers.constants.MaxUint256);
+  let tx = await GLD2Contract.approve(router.address, ethers.constants.MaxUint256, {
     gasLimit: gas,
     gasPrice: ethers.BigNumber.from('0x10000000'),
   });
@@ -75,40 +69,41 @@ async function deployUniSwapTokenContracts(hre: HardhatRuntimeEnvironment) {
   });
   await tx.wait();
 
-  console.log(`Adding liquidity......`);
+  const allowance0 = await GLDContract.allowance(wallet.address, router.address)
+  console.log(`GLD allowance: ${ethers.utils.formatEther(allowance0)}`);
+  const allowance1 = await GLD2Contract.allowance(wallet.address, router.address)
+  console.log(`GLD2 allowance: ${ethers.utils.formatEther(allowance1)}`);
 
+  
   const blockNumber = await provider.getBlockNumber();
   const block = await provider.getBlock(blockNumber);
+      
+  console.log(`Adding liquidity for GLD-GLD2 pool......`);
+  await(
+    await router.addLiquidity(
+      GLDContract.address,
+      GLD2Contract.address,
+      ethers.utils.parseEther("1000"),
+      ethers.utils.parseEther("1000"),
+      ethers.constants.Zero,
+      ethers.constants.Zero,
+      wallet.address,
+      block.timestamp + 10000,
+      {
+        gasLimit: 2100000,
+        gasPrice: ethers.BigNumber.from('0x10000000'),
+      }
+    )
+  ).wait();
 
-  tx = await router.addLiquidityETH(
-    GLDContract.address,
-    ethers.utils.parseEther("1000000000000"),
-    10000,
-    10000,
-    wallet.address,
-    block.timestamp + 1000,
-    {
-      gasLimit: ethers.BigNumber.from(4000000),
-      value: ethers.utils.parseEther("0.0001"),
-    }
-  );
-  await tx.wait()
-
-  const pairAddress = await factory.getPair(WETHContract.address, GLDContract.address);
-  console.log(`Pair balance: ${pairAddress}`);
-
-  // const artifactPair = hre.artifacts.readArtifactSync("UniswapV2Pair");
-  // const pair = new ethers.Contract(pairAddress, artifactPair.abi, wallet);
-
-  // const balance = await pair.balanceOf(wallet.address);
-  // console.log(`LP balance: ${ethers.utils.formatEther(balance)}`);
+  const pairAddress = await factory.getPair(GLD2Contract.address, GLDContract.address);
+  console.log(`Pair address: ${pairAddress}`);
 
   console.log('Updating .env')
   setEnvValue("GLD_TOKEN_ADDRESS", GLDContract.address);
   setEnvValue("GLD2_TOKEN_ADDRESS", GLD2Contract.address);
   setEnvValue("WETH_TOKEN_ADDRESS", WETHContract.address);
   setEnvValue("UNISWAP_V2_ROUTER02_ADDRESS", router.address);
-
 }
 
 
